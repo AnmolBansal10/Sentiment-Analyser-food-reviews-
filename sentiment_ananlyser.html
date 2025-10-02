@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentiment Spice - Food Review Analyzer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Tiro+Devanagari+Hindi:wght@400&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+        .hindi-title {
+            font-family: 'Tiro Devanagari Hindi', serif;
+        }
+        .bg-gradient-saffron {
+            background-image: linear-gradient(to top right, #f8b400, #f87217, #e11d48);
+        }
+        .card-bg {
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        textarea::placeholder {
+            color: #d1d5db;
+        }
+        .loader {
+            width: 48px;
+            height: 48px;
+            border: 5px solid #FFF;
+            border-bottom-color: #FF3D00;
+            border-radius: 50%;
+            display: inline-block;
+            box-sizing: border-box;
+            animation: rotation 1s linear infinite;
+        }
+        @keyframes rotation {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-saffron min-h-screen flex items-center justify-center p-4">
+
+    <div class="w-full max-w-4xl mx-auto">
+        <header class="text-center text-white mb-8">
+            <h1 class="text-5xl md:text-6xl font-bold hindi-title">Sentiment Spice</h1>
+            <p class="text-lg md:text-xl mt-2 opacity-90">Analyse Your Indian Food Reviews</p>
+        </header>
+
+        <main class="card-bg rounded-2xl shadow-2xl p-6 md:p-8">
+            <div class="mb-6">
+                <label for="review-text" class="block text-white text-lg font-semibold mb-2">Enter your food review here:</label>
+                <textarea id="review-text" rows="6" class="w-full p-4 bg-white/20 text-white rounded-lg border-2 border-transparent focus:border-white focus:ring-0 transition-all duration-300 placeholder-gray-300" placeholder="e.g., The biryani was absolutely aromatic and delicious, a must-try!"></textarea>
+                <div id="error-message" class="text-red-300 mt-2 text-sm hidden">Please enter a review to analyze.</div>
+            </div>
+
+            <div class="text-center">
+                <button id="analyze-btn" class="bg-white text-rose-600 font-bold py-3 px-10 rounded-full hover:bg-rose-100 transform hover:scale-105 transition-all duration-300 shadow-lg">
+                    Analyze Sentiment
+                </button>
+            </div>
+            
+            <!-- Loading Spinner -->
+            <div id="loader" class="text-center mt-8 hidden">
+                <div class="loader mx-auto"></div>
+                <p class="text-white mt-2">Simulating analysis...</p>
+            </div>
+
+            <!-- Results Section -->
+            <div id="results" class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6 hidden">
+                <!-- VADER Results -->
+                <div id="vader-card" class="bg-white/20 p-6 rounded-lg border border-white/20">
+                    <h3 class="text-2xl font-bold text-white text-center mb-4">VADER Analysis</h3>
+                    <div id="vader-sentiment" class="text-center mb-4">
+                        <p class="text-5xl">🤔</p>
+                        <p class="text-2xl font-semibold text-white mt-1">Neutral</p>
+                    </div>
+                    <div class="space-y-3 text-white">
+                        <div class="flex justify-between items-center">
+                            <span class="font-semibold">Positive</span>
+                            <div class="w-2/3 bg-gray-600 rounded-full h-2.5">
+                                <div id="vader-pos" class="bg-green-400 h-2.5 rounded-full" style="width: 0%"></div>
+                            </div>
+                            <span id="vader-pos-val" class="text-sm w-10 text-right">0.00</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="font-semibold">Neutral</span>
+                            <div class="w-2/3 bg-gray-600 rounded-full h-2.5">
+                                <div id="vader-neu" class="bg-yellow-400 h-2.5 rounded-full" style="width: 0%"></div>
+                            </div>
+                            <span id="vader-neu-val" class="text-sm w-10 text-right">0.00</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="font-semibold">Negative</span>
+                            <div class="w-2/3 bg-gray-600 rounded-full h-2.5">
+                                <div id="vader-neg" class="bg-red-400 h-2.5 rounded-full" style="width: 0%"></div>
+                            </div>
+                             <span id="vader-neg-val" class="text-sm w-10 text-right">0.00</span>
+                        </div>
+                    </div>
+                     <div class="mt-4 pt-4 border-t border-white/20 text-center">
+                        <p class="text-white font-bold text-lg">Compound Score: <span id="vader-compound">0.00</span></p>
+                    </div>
+                </div>
+
+                <!-- RoBERTa Results -->
+                <div id="roberta-card" class="bg-white/20 p-6 rounded-lg border border-white/20">
+                    <h3 class="text-2xl font-bold text-white text-center mb-4">RoBERTa Analysis</h3>
+                     <div id="roberta-sentiment" class="text-center mb-4">
+                        <p class="text-5xl">🤔</p>
+                        <p class="text-2xl font-semibold text-white mt-1">Neutral</p>
+                    </div>
+                     <div class="space-y-3 text-white">
+                        <div class="flex justify-between items-center">
+                            <span class="font-semibold">Positive</span>
+                            <div class="w-2/3 bg-gray-600 rounded-full h-2.5">
+                                <div id="roberta-pos" class="bg-green-400 h-2.5 rounded-full" style="width: 0%"></div>
+                            </div>
+                            <span id="roberta-pos-val" class="text-sm w-10 text-right">0%</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="font-semibold">Neutral</span>
+                            <div class="w-2/3 bg-gray-600 rounded-full h-2.5">
+                                <div id="roberta-neu" class="bg-yellow-400 h-2.5 rounded-full" style="width: 0%"></div>
+                            </div>
+                            <span id="roberta-neu-val" class="text-sm w-10 text-right">0%</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="font-semibold">Negative</span>
+                            <div class="w-2/3 bg-gray-600 rounded-full h-2.5">
+                                <div id="roberta-neg" class="bg-red-400 h-2.5 rounded-full" style="width: 0%"></div>
+                            </div>
+                            <span id="roberta-neg-val" class="text-sm w-10 text-right">0%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <p class="text-center text-white text-xs mt-8 opacity-70">
+                Disclaimer: This is a frontend demonstration. The sentiment analysis is simulated in JavaScript to mimic the behavior of VADER and RoBERTa models.
+            </p>
+        </main>
+    </div>
+
+    <script>
+        const analyzeBtn = document.getElementById('analyze-btn');
+        const reviewText = document.getElementById('review-text');
+        const resultsDiv = document.getElementById('results');
+        const loader = document.getElementById('loader');
+        const errorMessage = document.getElementById('error-message');
+
+        const positiveWords = ['good', 'great', 'delicious', 'amazing', 'excellent', 'tasty', 'wonderful', 'perfect', 'best', 'love', 'loved', 'awesome', 'fantastic', 'superb', 'fresh', 'aromatic', 'flavorful', 'divine', 'heavenly', 'must-try'];
+        const negativeWords = ['bad', 'awful', 'terrible', 'horrible', 'disgusting', 'worst', 'poor', 'stale', 'bland', 'overcooked', 'undercooked', 'hate', 'hated', 'disappointing', 'rude', 'cold'];
+
+        analyzeBtn.addEventListener('click', () => {
+            const text = reviewText.value.trim();
+            if (text === '') {
+                errorMessage.classList.remove('hidden');
+                return;
+            }
+            
+            errorMessage.classList.add('hidden');
+            resultsDiv.classList.add('hidden');
+            loader.classList.remove('hidden');
+
+            // Simulate model processing time
+            setTimeout(() => {
+                const analysis = simulateAnalysis(text);
+                updateUI(analysis);
+                loader.classList.add('hidden');
+                resultsDiv.classList.remove('hidden');
+            }, 1500);
+        });
+
+        function simulateAnalysis(text) {
+            const words = text.toLowerCase().replace(/[^\w\s]/gi, '').split(/\s+/);
+            let posCount = 0;
+            let negCount = 0;
+
+            words.forEach(word => {
+                if (positiveWords.includes(word)) posCount++;
+                if (negativeWords.includes(word)) negCount++;
+            });
+
+            const totalWords = words.length || 1;
+            
+            // Simulate VADER scores
+            let vaderPos = Math.min(0.95, posCount / totalWords * 2.5);
+            let vaderNeg = Math.min(0.95, negCount / totalWords * 2.5);
+            let vaderNeu = Math.max(0.05, 1 - vaderPos - vaderNeg);
+            const sum = vaderPos + vaderNeg + vaderNeu;
+            vaderPos /= sum;
+            vaderNeg /= sum;
+            vaderNeu /= sum;
+            
+            let vaderCompound = (vaderPos - vaderNeg) * Math.max(0.5, 1 - (vaderNeu * 0.5));
+            vaderCompound = Math.max(-1, Math.min(1, vaderCompound));
+
+            // Simulate RoBERTa scores
+            let robertaPos = (posCount * 3 + 1);
+            let robertaNeg = (negCount * 3 + 1);
+            let robertaNeu = Math.max(1, totalWords - posCount - negCount);
+            
+            const robertaTotal = robertaPos + robertaNeg + robertaNeu;
+            robertaPos /= robertaTotal;
+            robertaNeg /= robertaTotal;
+            robertaNeu /= robertaTotal;
+
+
+            return {
+                vader: { pos: vaderPos, neu: vaderNeu, neg: vaderNeg, compound: vaderCompound },
+                roberta: { pos: robertaPos, neu: robertaNeu, neg: robertaNeg }
+            };
+        }
+        
+        function getSentiment(compound, robertaProbs) {
+            let vaderResult, robertaResult;
+            
+            if (compound >= 0.05) {
+                vaderResult = { label: 'Positive', emoji: '😍', cardId: 'vader-card', color: 'bg-green-400/30' };
+            } else if (compound <= -0.05) {
+                vaderResult = { label: 'Negative', emoji: '😠', cardId: 'vader-card', color: 'bg-red-400/30' };
+            } else {
+                vaderResult = { label: 'Neutral', emoji: '🤔', cardId: 'vader-card', color: 'bg-yellow-400/30' };
+            }
+            
+            const maxProb = Math.max(robertaProbs.pos, robertaProbs.neu, robertaProbs.neg);
+            if (maxProb === robertaProbs.pos) {
+                 robertaResult = { label: 'Positive', emoji: '😍', cardId: 'roberta-card', color: 'bg-green-400/30' };
+            } else if (maxProb === robertaProbs.neg) {
+                 robertaResult = { label: 'Negative', emoji: '😠', cardId: 'roberta-card', color: 'bg-red-400/30' };
+            } else {
+                 robertaResult = { label: 'Neutral', emoji: '🤔', cardId: 'roberta-card', color: 'bg-yellow-400/30' };
+            }
+            
+            return { vaderResult, robertaResult };
+        }
+
+        function updateUI(analysis) {
+            const { vader, roberta } = analysis;
+            
+            const {vaderResult, robertaResult} = getSentiment(vader.compound, roberta);
+            
+            // --- Update VADER Card ---
+            document.getElementById('vader-sentiment').innerHTML = `<p class="text-5xl">${vaderResult.emoji}</p><p class="text-2xl font-semibold text-white mt-1">${vaderResult.label}</p>`;
+            document.getElementById(vaderResult.cardId).className = `p-6 rounded-lg border border-white/20 transition-all duration-500 ${vaderResult.color}`;
+            
+            document.getElementById('vader-pos').style.width = `${vader.pos * 100}%`;
+            document.getElementById('vader-pos-val').textContent = vader.pos.toFixed(2);
+            document.getElementById('vader-neu').style.width = `${vader.neu * 100}%`;
+            document.getElementById('vader-neu-val').textContent = vader.neu.toFixed(2);
+            document.getElementById('vader-neg').style.width = `${vader.neg * 100}%`;
+            document.getElementById('vader-neg-val').textContent = vader.neg.toFixed(2);
+            document.getElementById('vader-compound').textContent = vader.compound.toFixed(2);
+
+            // --- Update RoBERTa Card ---
+            document.getElementById('roberta-sentiment').innerHTML = `<p class="text-5xl">${robertaResult.emoji}</p><p class="text-2xl font-semibold text-white mt-1">${robertaResult.label}</p>`;
+             document.getElementById(robertaResult.cardId).className = `p-6 rounded-lg border border-white/20 transition-all duration-500 ${robertaResult.color}`;
+
+            document.getElementById('roberta-pos').style.width = `${roberta.pos * 100}%`;
+            document.getElementById('roberta-pos-val').textContent = `${(roberta.pos * 100).toFixed(0)}%`;
+            document.getElementById('roberta-neu').style.width = `${roberta.neu * 100}%`;
+            document.getElementById('roberta-neu-val').textContent = `${(roberta.neu * 100).toFixed(0)}%`;
+            document.getElementById('roberta-neg').style.width = `${roberta.neg * 100}%`;
+            document.getElementById('roberta-neg-val').textContent = `${(roberta.neg * 100).toFixed(0)}%`;
+        }
+    </script>
+</body>
+</html>
